@@ -1,0 +1,452 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Canvas Drag and Drop Test</title>
+	</head>
+	<body>
+	
+	<section>
+		<div>
+			<canvas id="canvas" width="400" height="300">
+				This text is displayed if your browser does not support HTML5 Canvas.
+			</canvas>
+			
+<script type="text/javascript">
+	var WIDTH = 400;
+	var HEIGHT = 300;
+	var canvas = document.getElementById("canvas");
+	var ctx = canvas.getContext("2d");
+	
+	ctx.fillStyle = "#FAF7F8";
+	rect(0,0,WIDTH,HEIGHT);
+	
+	function rect(x,y,w,h) {
+		ctx.beginPath();
+		ctx.rect(x,y,w,h);
+		ctx.closePath();
+		ctx.fill();
+	}
+	
+
+	BaseElement = function(){
+		
+	}
+	
+	
+	Generator = function(){
+		this.colorStroke = '#444444';
+		this.width = 50;
+		this.height = 50;
+		this.radiusConnector = 5;
+		this.indexShowConnector = null;
+		this.x = 5;
+		this.y = 5;
+		this.connectors = new Array(
+			{"x" : this.x + this.width/2, "y" : this.y + this.width }
+		)
+		
+		this.move = function(dx, dy){
+			this.x += dx;
+			this.y += dy;
+			for (var i in this.connectors){
+				this.connectors[i].x +=dx;
+				this.connectors[i].y +=dy;
+			}
+			console.log(this.connectors);
+		}
+		
+		this.draw = function(){
+			var r = this.width/2;
+			var x0 = this.width/2 + this.x;
+			var y0 = this.height/2 + this.y;
+			
+			ctx.strokeStyle = this.colorStroke;
+			
+			ctx.beginPath();
+			ctx.arc(x0, y0 ,r , 0 , 2 * Math.PI, false);
+			ctx.closePath();
+			ctx.stroke();
+			
+			ctx.moveTo(x0,y0);
+			ctx.arc(x0 - r/4, y0, r/4, 0 ,  Math.PI, true);
+			ctx.stroke();
+			
+			ctx.moveTo(x0,y0);
+			ctx.arc(x0 + r/4, y0,r/4, Math.PI ,0  , true);
+			ctx.stroke();
+			
+			if (this.indexShowConnector != null){
+				ctx.fillStyle = "#FF0000";
+				ctx.beginPath();
+				ctx.arc(this.connectors[this.indexShowConnector].x, 
+						this.connectors[this.indexShowConnector].y,
+						this.radiusConnector, 0,  2*Math.PI, true );
+				ctx.closePath();
+				ctx.fill();
+			}
+			
+		}
+		
+		this.isPointInsideElement = function(x, y){
+			if(Math.pow(x - (this.x + this.width/2),2) + Math.pow(y - (this.y + this.height/2), 2) < Math.pow(this.width/2,2)) return true;
+			return false;
+		}
+		
+		this.isPointInAreaConnector = function(x,y){
+			for (var j in this.connectors){
+				if (Math.pow(x - this.connectors[j].x,2) + Math.pow(y - this.connectors[j].y,2)<Math.pow(this.radiusConnector,2)){
+					this.indexShowConnector = j;
+					return true;
+				}
+			}
+			return false;
+		}
+		
+	}
+	
+	
+	Transformator = function(){
+		this.colorStroke = '#444444';
+		this.width = 50;
+		this.radiusConnector = 5;
+		this.indexShowConnector = null;
+		this.x = 20;
+		this.y = 20;
+		this.connectors = new Array(
+				{"x" : this.x + this.width/2, "y" : this.y},
+				{"x" : this.x + this.width/2, "y" : this.y + this.width*1.5}
+			);
+		
+		this.move = function(dx, dy){
+			this.x += dx;
+			this.y += dy;
+			for (var i in this.connectors){
+				this.connectors[i].x +=dx;
+				this.connectors[i].y +=dy;
+			}
+			console.log(this.connectors);
+		}
+		
+
+		
+		this.draw = function(){
+			var r = this.width/2;
+			var x0 = this.width/2 + this.x;
+			var y0 = this.width/2 + this.y;
+			
+			ctx.strokeStyle = this.colorStroke;
+			
+			ctx.beginPath();
+			ctx.arc(x0, y0 ,r , 0 , 2 * Math.PI, false);
+			ctx.closePath();
+			ctx.stroke();
+			
+			ctx.beginPath();
+			ctx.arc(x0, y0 + r, r, 0 , 2 * Math.PI, false)
+			ctx.closePath();
+			ctx.stroke();
+			
+			if (this.indexShowConnector != null){
+				ctx.fillStyle = "#FF0000";
+				ctx.beginPath();
+				ctx.arc(this.connectors[this.indexShowConnector].x, 
+						this.connectors[this.indexShowConnector].y,
+						this.radiusConnector, 0,  2*Math.PI, true );
+				ctx.closePath();
+				ctx.fill();
+			}
+			
+		}
+		
+		this.isPointInsideElement = function(x, y){
+			if(Math.pow(x - (this.x + this.width/2),2) + Math.pow(y - (this.y + this.width/2), 2) < Math.pow(this.width/2,2)) return true;
+			return false;
+		}
+		
+		this.isPointInAreaConnector = function(x,y){
+			for (var j in this.connectors){
+				if (Math.pow(x - this.connectors[j].x,2) + Math.pow(y - this.connectors[j].y,2)<Math.pow(this.radiusConnector,2)){
+					this.indexShowConnector = j;
+					return true;
+				}
+			}
+			return false;
+		}
+	
+	}
+	var generator1 = new Generator();
+	var generator2 = new Generator();
+	var generator3 = new Generator();
+	var transformator = new Transformator();
+		
+
+	
+	ManagerField = function(canvas){
+		this.ctx = ctx;
+		this.indexCatchElement = null;
+		this.fieldSelect = null;
+		this.drawingLine = null;
+		
+
+		this.indexElementCatchingFirstConnector = null;
+		this.indexElementCatchingSecondConnector = null;
+		
+		this.colorStrokeDisselect = "#444444";
+		this.colorStrokeSelect = "#F40B28";
+		this.prevX = null;
+		this.prevY = null;
+		this.width = 400;
+		this.height = 300;
+		var elements = [];
+		var connections = [];
+		var canvas = canvas;
+		var self = this;
+		
+		
+		
+		
+		this.chooseModeMove = function(e){
+			console.log("chooseModeMove");
+			var x = e.pageX-canvas.offsetLeft;
+			var y = e.pageY - canvas.offsetTop;
+			
+			if (self.indexElementCatchingFirstConnector != null){
+				console.log("OEEE")
+				self.drawingLine = {};
+				self.drawingLine.beginX = x;
+				self.drawingLine.beginY = y;
+				self.drawingLine.endX = x;
+				self.drawingLine.endY = y;
+				canvas.onmousemove = self.moveDrawingLine;
+				console.log(self.drawingLine);
+				return false;
+			}
+			
+			/*Catch element if mouse get in its area*/
+			for (var j in elements){
+				if (elements[j].isPointInsideElement(x,y) == true){
+					self.indexCatchElement = j;
+					elements[j].colorStroke = self.colorStrokeSelect;
+					self.prevX = x;
+					self.prevY = y;
+					canvas.onmousemove = self.moveCatchElement;
+					console.log("Choose element with index: " + j);
+					break;
+				}
+			}
+			
+			/*If mouse doesn't get area of element then create area for select*/
+			if (self.indexCatchElement == null){
+				self.fieldSelect = {};
+				self.fieldSelect.beginX = x;
+				self.fieldSelect.beginY = y;
+				self.fieldSelect.endX = x;
+				self.fieldSelect.endY = y;
+				canvas.onmousemove = self.moveFieldSelect;
+				console.log("Choose mode : Create area for select ");
+				console.log(self.fieldSelect);
+			}
+			
+			self.redrawCanvas();
+			console.log("-------END chooseModeMove------")
+		}
+		
+		this.rectangle = function(x,y,w,h){
+			this.ctx.beginPath();
+			this.ctx.rect(x,y,w,h);
+			this.ctx.closePath();
+		}
+		
+		this.line = function(x1,y1,x2,y2){
+			this.ctx.beginPath();
+			this.ctx.strokeStyle = 'red';
+			this.ctx.moveTo(x1,y1);
+			this.ctx.lineTo(x2,y2);
+			this.ctx.stroke();
+		}
+		
+		this.clearCanvas = function(){
+			this.ctx.clearRect(0, 0, this.width, this.height);
+			this.ctx.fillStyle = "#FAF7F8";
+			this.rectangle(0, 0, this.width, this.height);
+			this.ctx.fill();
+		}
+		
+
+		
+		
+		
+		this.redrawCanvas = function(){
+			this.clearCanvas();
+			
+			/*Drawing all elements*/
+			for (var j in elements){
+				elements[j].draw();
+			}
+			
+			/*Drawing area for select*/
+			if (self.fieldSelect != null){
+				console.log("Draw area fore select");
+				console.log(self.fieldSelect.beginX + " " + self.fieldSelect.beginY + " " );
+				this.ctx.fillStyle = "#444444";
+				this.rectangle(self.fieldSelect.beginX,
+							   self.fieldSelect.beginY,
+							   self.fieldSelect.endX-self.fieldSelect.beginX,
+							   self.fieldSelect.endY-self.fieldSelect.beginY);
+				this.ctx.stroke();
+			}
+			
+			/*Drawing path for future connection*/
+			if (self.drawingLine != null){
+				console.log("drawing LINE");
+				self.line(self.drawingLine.beginX, self.drawingLine.beginY,
+						  self.drawingLine.endX, self.drawingLine.endY);
+			}
+			
+			/*Drawing fixing connecton*/
+			for (var j in connections){
+				
+			}
+		}
+		
+
+		
+		
+		this.clearAfterClickMouse = function(e){
+			
+			if (self.indexCatchElement != null){
+				elements[self.indexCatchElement].colorStroke = self.colorStrokeDisselect;
+				self.indexCatchElement = null;
+				canvas.onmousemove = self.trackingConnectors;
+			} 
+			
+			if (self.fieldSelect != null){
+				self.fieldSelect = null;
+				canvas.onmousemove = self.trackingConnectors;
+			}
+			
+			if (self.drawingLine != null){
+				if ((self.indexElementCatchingFirstConnector!=null) && (self.indexElementCatchingSecondConnector!=null)){
+					console.log("create new connection");
+					self.createNewConnection(self.indexElementCatchingFirstConnector, self.indexElementCatchingSecondConnector)
+				}
+				self.drawingLine = null;
+				elements[self.indexElementCatchingFirstConnector].indexShowConnector = null;
+				self.indexElementCatchingFirstConnector = null;
+				canvas.onmousemove = self.trackingConnectors;
+				console.log(self.indexElementCatchingFirstConnector + " " +self.indexElementCatchingSecondConnector);
+				
+			}
+			
+			self.redrawCanvas();
+		}
+		
+		this.moveCatchElement = function(e){
+			console.log("moveCatchElement");
+			var currentX = e.pageX - canvas.offsetLeft;
+			var currentY = e.pageY - canvas.offsetTop;
+			
+			if (elements[self.indexCatchElement] !=null){
+				elements[self.indexCatchElement].move(currentX - self.prevX, currentY - self.prevY);
+				self.prevX = currentX;
+				self.prevY = currentY;
+			}
+			self.redrawCanvas();
+		}
+		
+		this.moveFieldSelect = function(e){
+			console.log("moveFieldSelect");
+			var currentX = e.pageX - canvas.offsetLeft;
+			var currentY = e.pageY - canvas.offsetTop;
+			
+			if (self.fieldSelect != null){
+				self.fieldSelect.endX = currentX;
+				self.fieldSelect.endY = currentY;
+			}
+			self.redrawCanvas();
+		}
+		
+		this.moveDrawingLine = function(e){
+			console.log("moveDrawingLine");
+			var currentX = e.pageX - canvas.offsetLeft;
+			var currentY = e.pageY - canvas.offsetTop;
+			
+			if (self.drawingLine != null){
+				self.drawingLine.endX = currentX;
+				self.drawingLine.endY = currentY;
+			}
+			
+			self.indexElementCatchingSecondConnector = null;
+			for (var i in elements){
+				if (i != self.indexElementCatchingFirstConnector){
+					elements[i].indexShowConnector = null;
+					if (elements[i].isPointInAreaConnector(currentX,currentY) == true){
+						self.indexElementCatchingSecondConnector = i;
+					}
+				}	
+			}
+			self.redrawCanvas();
+		}
+		
+		this.createNewConnection = function(indexElementFirstConnector, indexElementSecondConnector){
+			var connection = {};
+			connection.first = indexElementFirstConnector;
+			connection.second = indexElementSecondConnector;
+			connections.push(connection);
+			console.log(connections);
+		}
+
+		
+		this.trackingConnectors = function(e){
+			console.log("trackingConnectors");
+			var currentX = e.pageX - canvas.offsetLeft;
+			var currentY = e.pageY - canvas.offsetTop;
+			
+			self.indexElementCatchingFirstConnector = null;
+			for (var i in elements){
+				elements[i].indexShowConnector = null;
+				if (elements[i].isPointInAreaConnector(currentX,currentY) == true){
+					self.indexElementCatchingFirstConnector = i;
+				}
+			}
+			self.redrawCanvas();
+		}
+		
+		
+		this.createElement = function(element){
+			elements.push(element);
+			element.draw();
+			console.log(elements);
+		}
+		
+		/*Add handle for events*/
+		canvas.onmousedown = self.chooseModeMove;
+		canvas.onmouseup   = self.clearAfterClickMouse;
+		canvas.onmousemove = self.trackingConnectors;
+		
+	}
+	var managerField = new ManagerField(canvas);
+	managerField.createElement(generator1);
+	managerField.createElement(transformator);
+	
+	
+	
+	
+	
+	
+
+</script>
+			
+			
+			
+			
+		</div>
+	</section>
+	</body>
+</html>
+<script>
+	
+
+
+</script>
