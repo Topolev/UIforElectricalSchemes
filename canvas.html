@@ -6,15 +6,17 @@
 	</head>
 	<body>
 	
+	<a href="#" id="generator">Generator</a>
+	<a href="#" id="trans">Trans</a>
 	<section>
 		<div>
-			<canvas id="canvas" width="400" height="300">
+			<canvas id="canvas" width="1000" height="1000">
 				This text is displayed if your browser does not support HTML5 Canvas.
 			</canvas>
 			
 <script type="text/javascript">
-	var WIDTH = 400;
-	var HEIGHT = 300;
+	var WIDTH = 1000;
+	var HEIGHT = 1000;
 	var canvas = document.getElementById("canvas");
 	var ctx = canvas.getContext("2d");
 	
@@ -97,7 +99,7 @@
 			for (var j in this.connectors){
 				if (Math.pow(x - this.connectors[j].x,2) + Math.pow(y - this.connectors[j].y,2)<Math.pow(this.radiusConnector,2)){
 					this.indexShowConnector = j;
-					return true;
+					return j;
 				}
 			}
 			return false;
@@ -109,13 +111,15 @@
 	Transformator = function(){
 		this.colorStroke = '#444444';
 		this.width = 50;
+		this.height = 75;
 		this.radiusConnector = 5;
+		this.lengthConnection = 15;
 		this.indexShowConnector = null;
 		this.x = 20;
 		this.y = 20;
 		this.connectors = new Array(
 				{"x" : this.x + this.width/2, "y" : this.y},
-				{"x" : this.x + this.width/2, "y" : this.y + this.width*1.5}
+				{"x" : this.x + this.width/2, "y" : this.y + this.width*1.5+2*this.lengthConnection}
 			);
 		
 		this.move = function(dx, dy){
@@ -138,14 +142,22 @@
 			ctx.strokeStyle = this.colorStroke;
 			
 			ctx.beginPath();
-			ctx.arc(x0, y0 ,r , 0 , 2 * Math.PI, false);
+			
+			ctx.moveTo(this.width/2 + this.x, this.y);
+			ctx.lineTo(this.width/2 + this.x,  this.lengthConnection  + this.y);
+			
+			ctx.arc(x0, y0 + this.lengthConnection ,r , 1.5*Math.PI , -0.5 * Math.PI, true);
+			
+			ctx.moveTo(x0, this.lengthConnection + 3*r + this.y);
+			ctx.lineTo(x0, 2*this.lengthConnection + 3*r + this.y);
+			
+			ctx.arc(x0, y0 + this.lengthConnection + r ,r , 0.5*Math.PI , -1.5 * Math.PI, true);
+
+			
 			ctx.closePath();
 			ctx.stroke();
 			
-			ctx.beginPath();
-			ctx.arc(x0, y0 + r, r, 0 , 2 * Math.PI, false)
-			ctx.closePath();
-			ctx.stroke();
+			
 			
 			if (this.indexShowConnector != null){
 				ctx.fillStyle = "#FF0000";
@@ -161,6 +173,7 @@
 		
 		this.isPointInsideElement = function(x, y){
 			if(Math.pow(x - (this.x + this.width/2),2) + Math.pow(y - (this.y + this.width/2), 2) < Math.pow(this.width/2,2)) return true;
+			if(Math.pow(x - (this.x + this.width/2),2) + Math.pow(y - (this.y + 1.5*this.width), 2) < Math.pow(this.width/2,2)) return true;
 			return false;
 		}
 		
@@ -168,7 +181,7 @@
 			for (var j in this.connectors){
 				if (Math.pow(x - this.connectors[j].x,2) + Math.pow(y - this.connectors[j].y,2)<Math.pow(this.radiusConnector,2)){
 					this.indexShowConnector = j;
-					return true;
+					return j;
 				}
 			}
 			return false;
@@ -178,7 +191,8 @@
 	var generator1 = new Generator();
 	var generator2 = new Generator();
 	var generator3 = new Generator();
-	var transformator = new Transformator();
+	var transformator1 = new Transformator();
+	var transformator2 = new Transformator();
 		
 
 	
@@ -189,15 +203,15 @@
 		this.drawingLine = null;
 		
 
-		this.indexElementCatchingFirstConnector = null;
-		this.indexElementCatchingSecondConnector = null;
+		this.catchingFirstConnector = null;
+		this.catchingSecondConnector = null;
 		
 		this.colorStrokeDisselect = "#444444";
 		this.colorStrokeSelect = "#F40B28";
 		this.prevX = null;
 		this.prevY = null;
-		this.width = 400;
-		this.height = 300;
+		this.width = 1000;
+		this.height = 1000;
 		var elements = [];
 		var connections = [];
 		var canvas = canvas;
@@ -211,7 +225,7 @@
 			var x = e.pageX-canvas.offsetLeft;
 			var y = e.pageY - canvas.offsetTop;
 			
-			if (self.indexElementCatchingFirstConnector != null){
+			if (self.catchingFirstConnector != null){
 				console.log("OEEE")
 				self.drawingLine = {};
 				self.drawingLine.beginX = x;
@@ -304,9 +318,100 @@
 						  self.drawingLine.endX, self.drawingLine.endY);
 			}
 			
-			/*Drawing fixing connecton*/
+			/*Drawing fixing connecton
+				connections: { 
+					{"first":"valueConnector", "second":"valueConnector"},
+					....
+					{"first":"valueConnector", "second":"valueConnector"},
+				}
+				valueConnector:{
+					"indexElement"   : "value",
+					"indexConnector" : "value"
+				}
+			*/
 			for (var j in connections){
+				var firstElement = elements[connections[j].first.indexElement];
+				var secondElement = elements[connections[j].second.indexElement];
+				var first = firstElement.connectors[connections[j].first.indexConnector];
+				var second = secondElement.connectors[connections[j].second.indexConnector];
 				
+				if (firstElement.y < secondElement.y){
+					var temporarily1 = firstElement;
+					firstElement = secondElement;
+					secondElement = temporarily1;
+					
+					var temporarily2 = first;
+					first = second;
+					second = temporarily2;
+				}
+				
+				console.log(connections);
+				console.log("Attention");
+				
+				if (firstElement.y == first.y){
+					if (secondElement.y == second.y){
+						this.line(first.x, first.y, first.x, second.y);
+						this.line(first.x, second.y, second.x, second.y);
+					} else{
+						var middleX = first.x + (second.x - first.x)/2;
+						this.line(first.x, first.y, middleX, first.y);
+						this.line(middleX, first.y, middleX, second.y);
+						this.line(middleX, second.y, second.x, second.y)
+					}
+				} else{
+					if (secondElement.y == second.y){
+						var middleX = first.x + (second.x - first.x)/2;
+						this.line(first.x, first.y, middleX, first.y);
+						this.line(middleX, first.y, middleX, second.y);
+						this.line(middleX, second.y, second.x, second.y)
+					} else{
+
+						this.line(first.x, first.y, first.x, second.y);
+						this.line(first.x, second.y, second.x, second.y);
+					}
+				}
+				
+				/*
+					if (secondElement.y == second.y){
+						console.log("01")
+						var middleX = first.x + (second.x - first.x)/2;
+						this.line(first.x, first.y, middleX, first.y);
+						this.line(middleX, first.y, middleX, second.y);
+						this.line(middleX, second.y, second.x, second.y)
+					} else {
+						this.line(first.x, first.y, second.x, first.y);
+						this.line(second.x, first.y, second.x, second.y);
+					}
+				
+				
+				/*if (second.y > secondElement.y){
+					if (first.y > firstElement.y){
+						console.log("01")
+						this.line(first.x, first.y, second.x, first.y);
+						this.line(second.x, first.y, second.x, second.y);
+					} else {
+						console.log("02")
+						this.line(first.x, first.y, first.x, second.y);
+						this.line(first.x, second.y, second.x, second.y);
+					}
+				} else {
+					console.log("03")
+					this.line(first.x, first.y, first.x, second.y);
+					this.line(first.x, second.y, second.x, second.y)
+				}
+				/*if (first.y < secondElement.y){
+					this.line(first.x, first.y, first.x, second.y);
+					this.line(first.x, second.y, second.x, second.y)
+				} else{
+					this.line(first.x, first.y, first.x + (second.x-first.x)/2, first.y);
+					this.line(first.x + (second.x-first.x)/2, first.y, first.x + (second.x-first.x)/2,second.y);
+					this.line(first.x + (second.x-first.x)/2, second.y, second.x, second.y)
+				}*/
+				
+				console.log("Fix connection:")
+				console.log(first);
+				console.log(second)
+				console.log("------")
 			}
 		}
 		
@@ -327,13 +432,13 @@
 			}
 			
 			if (self.drawingLine != null){
-				if ((self.indexElementCatchingFirstConnector!=null) && (self.indexElementCatchingSecondConnector!=null)){
+				if ((self.catchingFirstConnector!=null) && (self.catchingSecondConnector!=null)){
 					console.log("create new connection");
-					self.createNewConnection(self.indexElementCatchingFirstConnector, self.indexElementCatchingSecondConnector)
+					self.createNewConnection(self.catchingFirstConnector, self.catchingSecondConnector)
 				}
 				self.drawingLine = null;
-				elements[self.indexElementCatchingFirstConnector].indexShowConnector = null;
-				self.indexElementCatchingFirstConnector = null;
+				elements[self.catchingFirstConnector.indexElement].indexShowConnector = null;
+				self.catchingFirstConnector = null;
 				canvas.onmousemove = self.trackingConnectors;
 				console.log(self.indexElementCatchingFirstConnector + " " +self.indexElementCatchingSecondConnector);
 				
@@ -377,37 +482,52 @@
 				self.drawingLine.endY = currentY;
 			}
 			
-			self.indexElementCatchingSecondConnector = null;
+			self.catchingSecondConnector = null;
+			console.log(elements)
 			for (var i in elements){
-				if (i != self.indexElementCatchingFirstConnector){
+				console.log("i=" + i)
+				if (i != self.catchingFirstConnector.indexElement){
 					elements[i].indexShowConnector = null;
-					if (elements[i].isPointInAreaConnector(currentX,currentY) == true){
-						self.indexElementCatchingSecondConnector = i;
+					if (elements[i].isPointInAreaConnector(currentX,currentY) !== false){
+						var connector = {};
+						connector.indexElement = i;
+						connector.indexConnector = elements[i].isPointInAreaConnector(currentX,currentY);
+						self.catchingSecondConnector = connector;
+						console.log("secondConnector: ");
+						console.log(self.catchingSecondConnector);
+						console.log("----------")
 					}
 				}	
 			}
 			self.redrawCanvas();
 		}
 		
-		this.createNewConnection = function(indexElementFirstConnector, indexElementSecondConnector){
+		
+		/* firstConnector: {"indexElement":"value", "indexConnector":"value"}*/
+		this.createNewConnection = function(firstConnector, secondConnector){
 			var connection = {};
-			connection.first = indexElementFirstConnector;
-			connection.second = indexElementSecondConnector;
+			connection.first = firstConnector;
+			connection.second = secondConnector;
 			connections.push(connection);
+			console.log("Connection:")
 			console.log(connections);
 		}
 
 		
 		this.trackingConnectors = function(e){
-			console.log("trackingConnectors");
+			/*console.log("trackingConnectors");*/
 			var currentX = e.pageX - canvas.offsetLeft;
 			var currentY = e.pageY - canvas.offsetTop;
 			
-			self.indexElementCatchingFirstConnector = null;
+			self.catchingFirstConnector = null;
 			for (var i in elements){
 				elements[i].indexShowConnector = null;
-				if (elements[i].isPointInAreaConnector(currentX,currentY) == true){
-					self.indexElementCatchingFirstConnector = i;
+				if (elements[i].isPointInAreaConnector(currentX,currentY) !== false){
+					var connector = {};
+					connector.indexElement = i;
+					connector.indexConnector = elements[i].isPointInAreaConnector(currentX,currentY); 
+					self.catchingFirstConnector = connector;
+					/*console.log("catchingFirstConnector: " + self.catchingFirstConnector);*/
 				}
 			}
 			self.redrawCanvas();
@@ -427,11 +547,25 @@
 		
 	}
 	var managerField = new ManagerField(canvas);
-	managerField.createElement(generator1);
-	managerField.createElement(transformator);
+	
+	/*managerField.createElement(transformator1);
+	managerField.createElement(transformator2);*/
 	
 	
+	document.getElementById('generator').onclick = createGenerator;
+	document.getElementById('trans').onclick = createTrans;
+
 	
+	function createGenerator(e){
+		var generator = new Generator();
+		managerField.createElement(generator);
+		return false;
+	}
+	function createTrans(e){
+		var trans = new Transformator();
+		managerField.createElement(trans);
+		return false;
+	}
 	
 	
 	
